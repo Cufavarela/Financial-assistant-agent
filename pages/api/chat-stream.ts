@@ -3,8 +3,8 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import type { Server as HttpServer } from "http";
 import type { Server as HttpsServer } from "https";
 import { WebSocketServer } from 'ws';
-import { HNSWLib } from "langchain/vectorstores";
-import { OpenAIEmbeddings } from 'langchain/embeddings';
+import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
+import { OpenAIEmbeddings } from "@langchain/openai";
 import { makeChain } from "./util";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

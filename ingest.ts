@@ -1,11 +1,11 @@
-import { HNSWLib } from "langchain/vectorstores";
-import { OpenAIEmbeddings } from "langchain/embeddings";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import * as fs from "fs";
-import { Document } from "langchain/document";
-import { BaseDocumentLoader } from "langchain/document_loaders";
-import path from "path";
 import { load } from "cheerio";
+import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import * as fs from "fs";
+import { Document } from "@langchain/core/documents";
+import { BaseDocumentLoader } from "@langchain/core/document_loaders/base";
+import path from "path";
 
 const SITE_ORIGIN = "https://ladyahorro.com";
 

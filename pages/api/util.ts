@@ -1,9 +1,14 @@
-import { OpenAI } from "langchain/llms";
-import { LLMChain, ChatVectorDBQAChain, loadQAChain } from "langchain/chains";
-import { HNSWLib } from "langchain/vectorstores";
-import { PromptTemplate } from "langchain/prompts";
+import { OpenAI } from "@langchain/openai";
+import {
+  LLMChain,
+  ChatVectorDBQAChain,
+  loadQAChain,
+} from "@langchain/classic/chains";
+import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
+import { PromptTemplate } from "@langchain/core/prompts";
 
-const CONDENSE_PROMPT = PromptTemplate.fromTemplate(`Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
+const CONDENSE_PROMPT =
+  PromptTemplate.fromTemplate(`Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
 
 Chat History:
 {chat_history}
@@ -22,11 +27,12 @@ Question: {question}
 =========
 {context}
 =========
-Answer in Markdown:`);
+Answer in Markdown:`,
+);
 
 export const makeChain = (
   vectorstore: HNSWLib,
-  onTokenStream?: (token: string) => void
+  onTokenStream?: (token: string) => void,
 ) => {
   const questionGenerator = new LLMChain({
     llm: new OpenAI({
@@ -41,9 +47,13 @@ export const makeChain = (
       modelName: "gpt-4o-mini",
       temperature: 0,
       streaming: Boolean(onTokenStream),
-      callbackManager: {
-        handleNewToken: onTokenStream,
-      },
+      callbacks: onTokenStream
+        ? [
+            {
+              handleLLMNewToken: onTokenStream,
+            },
+          ]
+        : undefined,
     }),
     { prompt: QA_PROMPT },
   );
