@@ -11,30 +11,39 @@ Follow Up Input: {question}
 Standalone question:`);
 
 const QA_PROMPT = PromptTemplate.fromTemplate(
-  `You are an AI assistant for the open source library LangChain. The documentation is located at https://langchain.readthedocs.io.
-You are given the following extracted parts of a long document and a question. Provide a conversational answer with a hyperlink to the documentation.
-You should only use hyperlinks that are explicitly listed as a source in the context. Do NOT make up a hyperlink that is not listed.
-If the question includes a request for code, provide a code block directly from the documentation.
-If you don't know the answer, just say "Hmm, I'm not sure." Don't try to make up an answer.
-If the question is not about LangChain, politely inform them that you are tuned to only answer questions about LangChain.
+  `You are an AI assistant for Lady Ahorro (https://ladyahorro.com), a site about personal finance, saving, and intelligent investing.
+You are given the following extracted parts of the website and a question. Provide a conversational answer based only on that context.
+When you cite a source, only use exact https:// URLs that appear in the context (including the Links section). Do NOT invent or guess URL paths (for example, never turn "Cursos" into https://ladyahorro.com/cursos unless that exact URL is in the context).
+If you know a page name but the full URL is not in the context, link to https://ladyahorro.com or say you do not have the exact link.
+If you don't know the answer from the context, say "Hmm, I'm not sure." Don't make anything up.
+If the question is not about Lady Ahorro, its courses, services, or personal finance content from the site, politely say you are tuned to only answer questions about Lady Ahorro.
+Prefer answering in the same language the user used (Spanish or English).
 Question: {question}
 =========
 {context}
 =========
 Answer in Markdown:`);
 
-export const makeChain = (vectorstore: HNSWLib, onTokenStream?: (token: string) => void) => {
+export const makeChain = (
+  vectorstore: HNSWLib,
+  onTokenStream?: (token: string) => void
+) => {
   const questionGenerator = new LLMChain({
-    llm: new OpenAI({ temperature: 0 }),
+    llm: new OpenAI({
+      modelName: "gpt-4o-mini",
+      temperature: 0,
+    }),
     prompt: CONDENSE_PROMPT,
   });
+
   const docChain = loadQAChain(
     new OpenAI({
+      modelName: "gpt-4o-mini",
       temperature: 0,
       streaming: Boolean(onTokenStream),
       callbackManager: {
         handleNewToken: onTokenStream,
-      }
+      },
     }),
     { prompt: QA_PROMPT },
   );
@@ -44,5 +53,4 @@ export const makeChain = (vectorstore: HNSWLib, onTokenStream?: (token: string) 
     combineDocumentsChain: docChain,
     questionGeneratorChain: questionGenerator,
   });
-}
-
+};
