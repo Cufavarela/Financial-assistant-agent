@@ -7,6 +7,40 @@ import {
   type RequestContext,
 } from "@a2a-js/sdk/server";
 
+type Specialist = {
+  name: string;
+  url: string;
+};
+
+const getSpecialist = (question: string): Specialist => {
+  const normalizedQuestion = question.toLowerCase();
+
+  if (
+    normalizedQuestion.includes("feminanzas") ||
+    normalizedQuestion.includes("feminanzasonline.com")
+  ) {
+    return {
+      name: "Feminanzas",
+      url: "http://localhost:3003",
+    };
+  }
+
+  if (
+    normalizedQuestion.includes("lady ahorro") ||
+    normalizedQuestion.includes("ladyahorro.com")
+  ) {
+    return {
+      name: "Lady Ahorro",
+      url: "http://localhost:3001",
+    };
+  }
+
+  return {
+    name: "Lady Ahorro",
+    url: "http://localhost:3001",
+  };
+};
+
 export const superAgentExecutor: AgentExecutor = {
   execute: async (
     requestContext: RequestContext,
@@ -18,6 +52,8 @@ export const superAgentExecutor: AgentExecutor = {
       .filter((part) => part.content?.$case === "text")
       .map((part) => part?.content?.value)
       .join("\n");
+
+    const specialist = getSpecialist(question);
 
     eventBus.publish(
       AgentEvent.task({
@@ -36,7 +72,7 @@ export const superAgentExecutor: AgentExecutor = {
 
     try {
       const factory = new ClientFactory();
-      const client = await factory.createFromUrl("http://localhost:3001");
+      const client = await factory.createFromUrl(specialist.url);
 
       const result = await client.sendMessage({
         message: {
@@ -76,7 +112,9 @@ export const superAgentExecutor: AgentExecutor = {
           .filter(Boolean)
           .join("\n");
 
-        throw new Error(errorMessage || "Lady Ahorro specialist task failed.");
+        throw new Error(
+          errorMessage || `${specialist.name} specialist task failed.`,
+        );
       }
 
       const answer =
@@ -89,7 +127,7 @@ export const superAgentExecutor: AgentExecutor = {
           : "";
 
       if (!answer) {
-        throw new Error("Lady Ahorro returned no text artifact.");
+        throw new Error(`${specialist.name} returned no text artifact.`);
       }
 
       eventBus.publish(
@@ -99,7 +137,7 @@ export const superAgentExecutor: AgentExecutor = {
           artifact: {
             artifactId: `${taskId}-answer`,
             name: "Super agent answer",
-            description: "Answer received from the Lady Ahorro specialist.",
+            description: `Answer received from the ${specialist.name} specialist.`,
             parts: [
               {
                 content: {

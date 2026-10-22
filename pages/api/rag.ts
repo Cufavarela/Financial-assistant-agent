@@ -2,7 +2,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
 
-const QA_PROMPT = PromptTemplate.fromTemplate(`
+const LADY_AHORRO_QA_PROMPT = PromptTemplate.fromTemplate(`
 You are an AI assistant for Lady Ahorro (https://ladyahorro.com), a site about personal finance, saving, and intelligent investing.
 
 You are given extracted parts of the website and a question. Answer based only on the provided context.
@@ -28,8 +28,35 @@ Context:
 Answer in Markdown:
 `);
 
-export const makeRag = async (
+const FEMINANZAS_QA_PROMPT = PromptTemplate.fromTemplate(`
+You are an AI assistant for Feminanzas (https://feminanzasonline.com), a site about personal finance, saving, investing, and entrepreneurship.
+
+You are given extracted parts of the website and a question. Answer based only on the provided context.
+
+When you cite a source, only use exact https:// URLs that appear in the context.
+Do NOT invent or guess URL paths.
+
+If you don't know the answer from the context, say "Hmm, I'm not sure."
+Don't make anything up.
+
+If the question is not about Feminanzas, its courses, services, or personal finance content from the site, politely say you are tuned to only answer questions about Feminanzas.
+
+Prefer answering in the same language the user used.
+
+Question:
+{question}
+
+=========
+Context:
+{context}
+=========
+
+Answer in Markdown:
+`);
+
+const makeRagWithPrompt = async (
   vectorstore: MemoryVectorStore,
+  qaPrompt: PromptTemplate,
   onTokenStream?: (token: string) => void,
 ) => {
   const retriever = vectorstore.asRetriever();
@@ -46,7 +73,7 @@ export const makeRag = async (
       .map((document) => document.pageContent)
       .join("\n\n");
 
-    const prompt = await QA_PROMPT.format({
+    const prompt = await qaPrompt.format({
       question,
       context,
     });
@@ -79,3 +106,13 @@ export const makeRag = async (
     return answer;
   };
 };
+
+export const makeRag = async (
+  vectorstore: MemoryVectorStore,
+  onTokenStream?: (token: string) => void,
+) => makeRagWithPrompt(vectorstore, LADY_AHORRO_QA_PROMPT, onTokenStream);
+
+export const makeFemiRag = async (
+  vectorstore: MemoryVectorStore,
+  onTokenStream?: (token: string) => void,
+) => makeRagWithPrompt(vectorstore, FEMINANZAS_QA_PROMPT, onTokenStream);

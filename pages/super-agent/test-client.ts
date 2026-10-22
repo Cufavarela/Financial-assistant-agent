@@ -16,7 +16,7 @@ const main = async () => {
         {
           content: {
             $case: "text",
-            value: "¿Qué es Lady Ahorro?",
+            value: "¿Qué es feminanzas?",
           },
           metadata: undefined,
           filename: "",

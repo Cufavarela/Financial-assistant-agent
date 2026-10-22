@@ -1,0 +1,23 @@
+# Bash script to download Feminanzas site pages for ingestion.
+# Error if any command fails
+set -e
+echo Downloading Feminanzas pages...
+# -r -l 2: recurse two levels (homepage + nested pages)
+# -np: do not ascend to parent directories
+# -E: save extensionless HTML as .html
+# -D: stay on feminanzasonline.com only
+# no -A.html so pretty URLs are accepted
+# wget exits 8 when some URLs return server errors during a crawl; that is OK if pages were saved.
+set +e
+wget -q -r -l 2 -np -E -D feminanzasonline.com https://feminanzasonline.com/
+code=$?
+set -e
+if [ "$code" -ne 0 ] && [ "$code" -ne 8 ]; then
+  echo "wget failed with exit code $code" >&2
+  exit "$code"
+fi
+if [ ! -f feminanzasonline.com/index.html ]; then
+  echo "Download failed: feminanzasonline.com/index.html missing" >&2
+  exit 1
+fi
+echo Done.
