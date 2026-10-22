@@ -10,7 +10,8 @@
     "lint": "next lint",
     "download": "sh ingest/download.sh",
     "ingest": "tsx -r dotenv/config ingest.ts",
-    "agent": "tsx pages/agent/server.ts"
+    "agent": "tsx pages/agent/server.ts",
+    "super-agent": "tsx pages/super-agent/server.ts"
   },
   "dependencies": {
     "@a2a-js/sdk": "^1.1.0",
