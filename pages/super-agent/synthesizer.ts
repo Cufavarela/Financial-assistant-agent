@@ -42,6 +42,13 @@ Rules:
 - If a specialist doesn't provide enough information, acknowledge it.
 - Avoid repeating the same information.
 - Write naturally and structure the response clearly.
+- Actively reason across the specialists' answers.
+- When the answers contain comparable facts or numbers, compare them directly.
+- Perform simple calculations and comparisons when the required information is available.
+- Draw conclusions that logically follow from the specialists' answers.
+- Never claim that information is missing when the answers already contain enough information.
+- Distinguish between missing information and conflicting information.
+- If both specialists provide the same value, explicitly state that they are equal.
 - Respond in the same language as the user's question.
       `,
     },
