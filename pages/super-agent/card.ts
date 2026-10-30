@@ -1,6 +1,8 @@
 
 import type { AgentCard } from "@a2a-js/sdk";
 
+import { agentUrls } from "../../lib/agents/config";
+
 export const superAgentCard: AgentCard = {
   name: "Super Agent",
   description:
@@ -11,7 +13,7 @@ export const superAgentCard: AgentCard = {
     {
       protocolBinding: "JSONRPC",
       protocolVersion: "1.0",
-      url: "http://localhost:3002",
+      url: agentUrls.super,
       tenant: "",
     },
   ],

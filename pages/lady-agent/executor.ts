@@ -6,6 +6,7 @@ import {
   type RequestContext,
 } from "@a2a-js/sdk/server";
 
+import { extractTextFromParts } from "../../lib/agents/message";
 import { makeRag } from "../../pages/api/rag";
 import { getVectorStore } from "../../pages/api/vectorstore";
 
@@ -16,10 +17,7 @@ export const ladyAhorroAgentExecutor: AgentExecutor = {
   ): Promise<void> => {
     const { taskId, contextId } = requestContext;
 
-    const question = requestContext.userMessage.parts
-      .filter((part) => part.content?.$case === "text")
-      .map((part) => part.content?.value ?? "")
-      .join("\n");
+    const question = extractTextFromParts(requestContext.userMessage.parts);
 
     eventBus.publish(
       AgentEvent.task({

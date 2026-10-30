@@ -1,4 +1,4 @@
-import { Role, TaskState } from "@a2a-js/sdk";
+import { TaskState } from "@a2a-js/sdk";
 import { ClientFactory } from "@a2a-js/sdk/client";
 import {
   AgentEvent,
@@ -7,37 +7,67 @@ import {
   type RequestContext,
 } from "@a2a-js/sdk/server";
 
+import { agentUrls } from "../../lib/agents/config";
+import {
+  buildUserSendMessageRequest,
+  extractTextFromParts,
+} from "../../lib/agents/message";
+import { decideRoute } from "./router";
+import { synthesizeAnswers } from "./synthesizer";
+
 type Specialist = {
   name: string;
   url: string;
 };
 
-const getSpecialist = (question: string): Specialist => {
-  const normalizedQuestion = question.toLowerCase();
+const specialists = {
+  lady: {
+    name: "Lady Ahorro",
+    url: agentUrls.lady,
+  },
+  femi: {
+    name: "Feminanzas",
+    url: agentUrls.femi,
+  },
+};
+
+const askSpecialist = async (specialist: Specialist, question: string) => {
+  const factory = new ClientFactory();
+  const client = await factory.createFromUrl(specialist.url);
+
+  const result = await client.sendMessage(
+    buildUserSendMessageRequest(question),
+  );
 
   if (
-    normalizedQuestion.includes("feminanzas") ||
-    normalizedQuestion.includes("feminanzasonline.com")
+    "status" in result &&
+    result.status?.state === TaskState.TASK_STATE_FAILED
   ) {
-    return {
-      name: "Feminanzas",
-      url: "http://localhost:3003",
-    };
+    const errorMessage = result.status.message?.parts
+      ? extractTextFromParts(result.status.message.parts)
+      : "";
+
+    throw new Error(
+      errorMessage || `${specialist.name} specialist task failed.`,
+    );
   }
 
-  if (
-    normalizedQuestion.includes("lady ahorro") ||
-    normalizedQuestion.includes("ladyahorro.com")
-  ) {
-    return {
-      name: "Lady Ahorro",
-      url: "http://localhost:3001",
-    };
+  const answer =
+    "artifacts" in result
+      ? (result.artifacts ?? [])
+          .flatMap((artifact) => artifact.parts)
+          .filter((part) => part.content?.$case === "text")
+          .map((part) => part.content?.value)
+          .join("\n")
+      : "";
+
+  if (!answer) {
+    throw new Error(`${specialist.name} returned no text artifact.`);
   }
 
   return {
-    name: "Lady Ahorro",
-    url: "http://localhost:3001",
+    name: specialist.name,
+    answer,
   };
 };
 
@@ -48,12 +78,7 @@ export const superAgentExecutor: AgentExecutor = {
   ): Promise<void> => {
     const { taskId, contextId, userMessage } = requestContext;
 
-    const question = userMessage.parts
-      .filter((part) => part.content?.$case === "text")
-      .map((part) => part?.content?.value)
-      .join("\n");
-
-    const specialist = getSpecialist(question);
+    const question = extractTextFromParts(userMessage.parts);
 
     eventBus.publish(
       AgentEvent.task({
@@ -71,64 +96,23 @@ export const superAgentExecutor: AgentExecutor = {
     );
 
     try {
-      const factory = new ClientFactory();
-      const client = await factory.createFromUrl(specialist.url);
+      const { route } = await decideRoute(question);
 
-      const result = await client.sendMessage({
-        message: {
-          messageId: crypto.randomUUID(),
-          contextId: crypto.randomUUID(),
-          taskId: "",
-          role: Role.ROLE_USER,
-          parts: [
-            {
-              content: {
-                $case: "text",
-                value: question,
-              },
-              metadata: undefined,
-              filename: "",
-              mediaType: "text/plain",
-            },
-          ],
-          metadata: undefined,
-          extensions: [],
-          referenceTaskIds: [],
-        },
-        tenant: "",
-        configuration: undefined,
-        metadata: undefined,
-      });
+      const selectedSpecialists =
+        route === "both"
+          ? [specialists.lady, specialists.femi]
+          : [specialists[route]];
 
-      if ("status" in result && result?.status?.state === 4) {
-        const errorMessage = result?.status?.message?.parts
-          .map((part) => {
-            if (part?.content?.$case === "text") {
-              return part?.content?.value;
-            }
-
-            return "";
-          })
-          .filter(Boolean)
-          .join("\n");
-
-        throw new Error(
-          errorMessage || `${specialist.name} specialist task failed.`,
-        );
-      }
+      const answers = await Promise.all(
+        selectedSpecialists.map((specialist) =>
+          askSpecialist(specialist, question),
+        ),
+      );
 
       const answer =
-        "artifacts" in result
-          ? (result.artifacts ?? [])
-              .flatMap((artifact) => artifact.parts)
-              .filter((part) => part.content?.$case === "text")
-              .map((part) => part?.content?.value)
-              .join("\n")
-          : "";
-
-      if (!answer) {
-        throw new Error(`${specialist.name} returned no text artifact.`);
-      }
+        answers.length > 1
+          ? await synthesizeAnswers(question, answers)
+          : answers[0].answer;
 
       eventBus.publish(
         AgentEvent.artifactUpdate({
@@ -137,7 +121,7 @@ export const superAgentExecutor: AgentExecutor = {
           artifact: {
             artifactId: `${taskId}-answer`,
             name: "Super agent answer",
-            description: `Answer received from the ${specialist.name} specialist.`,
+            description: `Answer received from ${answers.map(({ name }) => name).join(" and ")}.`,
             parts: [
               {
                 content: {

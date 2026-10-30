@@ -1,5 +1,7 @@
 import type { AgentCard } from "@a2a-js/sdk";
 
+import { agentUrls } from "../../lib/agents/config";
+
 export const feminanzasAgentCard: AgentCard = {
   name: "Feminanzas Specialist",
   description:
@@ -10,7 +12,7 @@ export const feminanzasAgentCard: AgentCard = {
     {
       protocolBinding: "JSONRPC",
       protocolVersion: "1.0",
-      url: "http://localhost:3003",
+      url: agentUrls.femi,
       tenant: "",
     },
   ],

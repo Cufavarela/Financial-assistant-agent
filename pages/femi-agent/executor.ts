@@ -6,6 +6,7 @@ import {
   type RequestContext,
 } from "@a2a-js/sdk/server";
 
+import { extractTextFromParts } from "../../lib/agents/message";
 import { makeFemiRag } from "../../pages/api/rag";
 import { getFemiVectorStore } from "../../pages/api/vectorstore";
 
@@ -16,10 +17,7 @@ export const feminanzasAgentExecutor: AgentExecutor = {
   ): Promise<void> => {
     const { taskId, contextId } = requestContext;
 
-    const question = requestContext.userMessage.parts
-      .filter((part) => part.content?.$case === "text")
-      .map((part) => part.content?.value ?? "")
-      .join("\n");
+    const question = extractTextFromParts(requestContext.userMessage.parts);
 
     eventBus.publish(
       AgentEvent.task({
